@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16.6
+    container_name: aifc_postgres
+    environment:
+      POSTGRES_USER: aifc_user
+      POSTGRES_PASSWORD: aifc_dev_pw
+      POSTGRES_DB: ai_finance_controller
+    ports:
+      - "5432:5432"
+    volumes:
+      - aifc_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aifc_user -d ai_finance_controller"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  aifc_pgdata:

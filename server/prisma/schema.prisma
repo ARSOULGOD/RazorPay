@@ -1,0 +1,84 @@
+// AI Finance Controller — Prisma schema
+// Linking fields are plain nullable strings (no FK constraints) so synthetic
+// orphans and mismatches can be inserted freely (decision-doc D7).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EntryType {
+  PAYMENT
+  REFUND
+  PARTIAL_PAYMENT
+  PAYOUT
+}
+
+enum ReconciliationStatus {
+  MATCHED
+  PARTIAL_MATCH
+  EXCEPTION
+}
+
+/// What actually moved in the bank account.
+model BankTransaction {
+  id              String   @id @default(uuid())
+  bankTxnId       String   @unique
+  amount          Decimal
+  currency        String   @default("INR")
+  transactionDate DateTime
+  description     String
+  /// FK candidate — nullable so orphans are valid (not a schema bug).
+  linkedLedgerId  String?
+  createdAt       DateTime @default(now())
+}
+
+/// What the internal books say happened.
+model LedgerEntry {
+  id                 String    @id @default(uuid())
+  ledgerEntryId      String    @unique
+  invoiceOrOrderId   String?
+  amount             Decimal
+  currency           String    @default("INR")
+  entryDate          DateTime
+  entryType          EntryType
+  linkedBankTxnId    String?
+  linkedSettlementId String?
+  createdAt          DateTime  @default(now())
+}
+
+/// What the payment processor (Razorpay-style) reports as settled.
+/// netAmount is NOT derived in schema — synthetic data may inject errors.
+model SettlementRecord {
+  id             String   @id @default(uuid())
+  settlementId   String   @unique
+  /// Unique transaction reference as in real Razorpay settlement reports.
+  utr            String?
+  grossAmount    Decimal
+  fee            Decimal
+  tax            Decimal
+  netAmount      Decimal
+  settlementDate DateTime
+  linkedLedgerId String?
+  createdAt      DateTime @default(now())
+}
+
+/// Agent output per attempted reconciliation (Tier 1 or Tier 2).
+model ReconciliationResult {
+  id              String               @id @default(uuid())
+  bankTxnId       String?
+  ledgerEntryId   String?
+  settlementId    String?
+  status          ReconciliationStatus
+  confidence      Float
+  discrepancyType String?
+  /// Agent explanation — may be long text.
+  reasoning       String               @db.Text
+  /// false = deterministic Tier 1; true = Claude Tier 2.
+  resolvedByLLM   Boolean
+  createdAt       DateTime             @default(now())
+}

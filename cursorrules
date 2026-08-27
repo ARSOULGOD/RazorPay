@@ -1,0 +1,129 @@
+# AI Finance Controller — Razorpay Buildathon Track 04
+
+## Project
+A 3-way financial reconciliation agent that matches records across
+BankTransaction, LedgerEntry, and SettlementRecord tables, using the
+Claude API for ambiguous-match reasoning, and reports a measured match
+rate plus an honest, explained exception list for unresolved records.
+
+Authoritative docs (do not contradict; decision-doc wins on conflict):
+- `decision-doc.md` — locked decisions D1–D8
+- `design-doc.md` — how the system works (taxonomy, tiers, metrics, UI)
+- This file — day-to-day coding constraints for Cursor
+
+## Current repo layout (post client/server split)
+```
+./
+├── cursorrules
+├── decision-doc.md
+├── design-doc.md
+├── docker-compose.yml      # local Postgres — use this, not prisma dev
+├── .gitignore
+├── .env                    # root leftover; leave until user confirms delete
+├── tsconfig.json           # root leftover; leave until user confirms delete
+├── ground-truth/
+│   └── event-mapping.json  # agent must NEVER read this
+├── server/                 # Express + Prisma + recon engine
+│   ├── .env                # ACTIVE env (DATABASE_URL, ANTHROPIC_API_KEY)
+│   ├── prisma/
+│   │   ├── schema.prisma
+│   │   └── migrations/20260826202101_init/
+│   ├── prisma.config.ts
+│   ├── package.json
+│   └── src/                # stubs + real prisma singleton only (see Status)
+└── client/                 # Vite + React + TS dashboard (stubs)
+```
+Do NOT reintroduce root-level `package.json`, `node_modules/`, `prisma/`,
+or `src/`. Packages live under `server/` and `client/` only.
+
+## Stack — DO NOT DEVIATE
+- Backend: Node.js + Express (TypeScript) in `server/`
+- Frontend: React (TypeScript, Vite) in `client/`
+- Database: PostgreSQL via Docker Compose at project root
+  - image: `postgres:16.6`
+  - container_name: `aifc_postgres`
+  - named volume: `aifc_pgdata` (persists across restarts)
+  - credentials: `aifc_user` / `aifc_dev_pw` / db `ai_finance_controller`
+  - host port: 5432
+- ORM: Prisma **6.x** (`prisma` + `@prisma/client` pinned ~6.19)
+  - NEVER upgrade to Prisma 8 / Composer CLI — classic `schema.prisma`
+    + `migrate` / `format` / `validate` workflow only
+  - Schema + migrations live only under `server/prisma/`
+  - Shared client: `server/src/db/prisma.ts` (singleton — import this)
+- LLM: Anthropic Claude API via official `@anthropic-ai/sdk`, direct
+  calls — NEVER LangChain, LlamaIndex, or other agent frameworks.
+  NEVER suggest OpenAI, Gemini, or Groq as alternatives.
+- Package manager: npm (run installs inside `server/` or `client/`)
+
+## Local DB rules
+- Start DB with: `docker compose up -d` from project root.
+- Confirm healthy: `docker ps` → `aifc_postgres` running/healthy.
+- If a Docker command fails: STOP and report the exact error.
+  Do NOT fall back to `prisma dev` or any ephemeral Postgres.
+- Active `DATABASE_URL` is in `server/.env` only:
+  `postgresql://aifc_user:aifc_dev_pw@localhost:5432/ai_finance_controller?schema=public`
+
+## Session status (as of 2026-08-27 wrap-up)
+DONE:
+- Schema + init migration applied on Docker Postgres (all 4 tables empty)
+- Full folder scaffold for server + client + ground-truth
+- `server/src/db/prisma.ts` has real PrismaClient singleton
+- Root pre-split strays deleted (root node_modules, package.json,
+  package-lock, prisma/, prisma.config.ts, empty src/)
+
+NOT DONE (files are purpose-comment stubs only — fill when asked):
+- Synthetic data generation (`server/src/data-generation/**`)
+- Reconciliation Tier 1 / Tier 2 / router / run
+- Metrics + exception list
+- API routes + Express `index.ts`
+- Client UI components (RunTrigger, MetricsSummary, ExceptionList, QnA)
+- Settlement Q&A stretch layer
+- Populating `ground-truth/event-mapping.json`
+
+Open items (do not silently decide — see design-doc):
+- FK constraints after data generation validated (D7)
+- Exact Tier 1→2 confidence threshold (tune on real data)
+- Where ground-truth ORIGIN mapping is stored long-term
+
+## Core domain rules (do not violate when generating schema, data, or logic)
+1. All monetary amounts are Prisma `Decimal`, never `Float` or `Int`.
+   Currency math must never use native JS floating point.
+2. All timestamps use full `DateTime`, not date-only — settlement lag
+   needs time precision.
+3. Cross-table linking fields are plain nullable strings with NO FK
+   constraints yet (D7). Null = valid orphan → exception list, not a bug.
+4. Every reconciliation decision must be structured:
+   `{ status: MATCHED | PARTIAL_MATCH | EXCEPTION, confidence: number,
+     discrepancyType: string | null, reasoning: string }`.
+   Never bare boolean or unstructured prose only.
+5. Exact matches (exact ID + amount + timestamp) → plain TypeScript
+   (Tier 1). Ambiguous cases (fee deduction, settlement lag,
+   split/many-to-one, partial capture, duplicates, rounding) → Claude
+   (Tier 2). Ask before treating a case as deterministic enough to skip LLM.
+6. Never inflate match rate by force-fitting. Honest exceptions with
+   reasoning are correct outputs.
+7. `SettlementRecord.netAmount` is NOT auto-computed in schema — synthetic
+   data may intentionally inject net ≠ gross − fee − tax.
+8. Discrepancy taxonomy (must be explicit in data, not incidental):
+   exactMatch, settlementLag, feeDeduction, partialCapture, splitPayment,
+   manyToOne, duplicateEntry, currencyRounding, trueOrphan (target 4–6+).
+9. Ground truth is for internal validation only — never expose it to the
+   reconciliation agent or Tier-2 prompts.
+
+## Working style
+- Before touching Prisma schema, LLM prompt logic, or reconciliation
+  matching logic, state current data-flow understanding in 1–3 sentences,
+  then proceed. Do not silently assume schema shape.
+- When asked to add a new discrepancy type to synthetic data, ask which
+  table(s) it originates in before generating rows.
+- Never invent Razorpay-specific field names from memory — if uncertain
+  (e.g. utr, fee, tax, settlement_id), say so explicitly.
+- Keep secrets in `server/.env`, never hardcode, never log API keys in
+  full (mask all but last 4 chars if debugging).
+- Do not add UI polish unless explicitly requested. Priority:
+  correct schema > honest synthetic data > working reconciliation >
+  accurate metrics/exception reporting > UI (UI last).
+- Fill stub files only when the user asks for that file/feature — do not
+  bulk-implement the whole pipeline unprompted.
+- Do not modify `decision-doc.md` / `design-doc.md` unless explicitly asked.
+  Locked decisions stay locked without a real new constraint.
