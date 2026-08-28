@@ -430,17 +430,6 @@ main().catch((err) => {
 });
 ```
 
-**Path note for implementer:** Use exactly:
-
-```typescript
-const groundTruthPath = path.resolve(process.cwd(), "../ground-truth/event-mapping.json");
-if (!fs.existsSync(path.dirname(groundTruthPath))) {
-  abort(`ground-truth directory missing at ${path.dirname(groundTruthPath)}`);
-}
-```
-
-Do not leave both `groundTruthPath` and `groundTruthPathFixed` in the final file — one correct path only.
-
 - [ ] **Step 3: Ensure deps + Prisma client**
 
 ```bash
