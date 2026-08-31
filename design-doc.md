@@ -97,8 +97,11 @@ all 3 tables. If Tier 1 resolves a record with high confidence, it is
 NOT sent to the LLM. This is expected to resolve the "exact match"
 baseline category and reduce LLM calls/cost.
 
-### Tier 2 — LLM-routed (Claude API, structured output)
-Anything Tier 1 cannot confidently resolve is passed to Claude with:
+### Tier 2 — LLM-routed (Gemini API, structured output)
+Anything Tier 1 cannot confidently resolve is passed to Gemini (per
+decision-doc D4, REVISED — originally specified as Claude, switched
+due to an Anthropic account credit issue, not a capability concern)
+with:
 - The candidate records from each source that might relate to it
 - Explicit instruction to reason about known discrepancy types
   (fee deduction, lag, split, etc.)
@@ -163,7 +166,7 @@ solid (decision-doc D1 priority ordering, restated in .cursorrules).
 If core reconciliation is solid with time remaining: a chat interface
 that answers questions like "why didn't transaction X match?" by
 reusing the `reasoning` field already stored in ReconciliationResult,
-plus a Claude call that can reference the specific record's stored
+plus a Gemini call that can reference the specific record's stored
 reasoning and elaborate conversationally. This is explicitly a thin
 layer over existing data, not a parallel system — do not let this
 become a second reconciliation engine.
@@ -179,3 +182,10 @@ become a second reconciliation engine.
 - Whether ground-truth ORIGIN mapping (Section 3) is stored in a
   separate table/file inaccessible to the reconciliation logic, or
   kept entirely outside the database to avoid any risk of leakage.
+
+Note: decision-doc now runs through D9 (local Postgres via Docker,
+verified and locked). If this design doc and decision-doc ever appear
+out of sync on version — e.g. an older copy of one gets pasted back
+into a session — decision-doc's own stated content wins, since it is
+both the more recently maintained file and the one this doc names as
+authoritative on conflict.

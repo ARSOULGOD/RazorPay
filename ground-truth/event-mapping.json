@@ -1,1 +1,964 @@
-{}
+{
+  "seed": 42,
+  "count": 75,
+  "generatedAt": "2026-08-29T14:18:33.260Z",
+  "events": [
+    {
+      "eventId": "evt_0001",
+      "discrepancyType": "exactMatch",
+      "bankTxnIds": [
+        "bank_evt_0001_s0"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0001_s0"
+      ],
+      "settlementIds": [
+        "set_evt_0001_s0"
+      ]
+    },
+    {
+      "eventId": "evt_0002",
+      "discrepancyType": "feeDeduction",
+      "bankTxnIds": [
+        "bank_evt_0002_s1"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0002_s1"
+      ],
+      "settlementIds": [
+        "set_evt_0002_s1"
+      ]
+    },
+    {
+      "eventId": "evt_0003",
+      "discrepancyType": "duplicateEntry",
+      "bankTxnIds": [
+        "bank_evt_0003_s2"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0003_s2",
+        "led_evt_0003_s2_dup"
+      ],
+      "settlementIds": [
+        "set_evt_0003_s2"
+      ]
+    },
+    {
+      "eventId": "evt_0004",
+      "discrepancyType": "exactMatch",
+      "bankTxnIds": [
+        "bank_evt_0004_s3"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0004_s3"
+      ],
+      "settlementIds": [
+        "set_evt_0004_s3"
+      ]
+    },
+    {
+      "eventId": "evt_0005",
+      "discrepancyType": "manyToOne",
+      "bankTxnIds": [
+        "bank_evt_0005_s4"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0005_s4_a",
+        "led_evt_0005_s4_b"
+      ],
+      "settlementIds": [
+        "set_evt_0005_s4"
+      ]
+    },
+    {
+      "eventId": "evt_0006",
+      "discrepancyType": "splitPayment",
+      "bankTxnIds": [
+        "bank_evt_0006_s5_p1",
+        "bank_evt_0006_s5_p2"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0006_s5"
+      ],
+      "settlementIds": []
+    },
+    {
+      "eventId": "evt_0007",
+      "discrepancyType": "exactMatch",
+      "bankTxnIds": [
+        "bank_evt_0007_s6"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0007_s6"
+      ],
+      "settlementIds": [
+        "set_evt_0007_s6"
+      ]
+    },
+    {
+      "eventId": "evt_0008",
+      "discrepancyType": "splitPayment",
+      "bankTxnIds": [
+        "bank_evt_0008_s7_p1",
+        "bank_evt_0008_s7_p2"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0008_s7"
+      ],
+      "settlementIds": []
+    },
+    {
+      "eventId": "evt_0009",
+      "discrepancyType": "settlementLag",
+      "bankTxnIds": [
+        "bank_evt_0009_s8"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0009_s8"
+      ],
+      "settlementIds": [
+        "set_evt_0009_s8"
+      ]
+    },
+    {
+      "eventId": "evt_0010",
+      "discrepancyType": "exactMatch",
+      "bankTxnIds": [
+        "bank_evt_0010_s9"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0010_s9"
+      ],
+      "settlementIds": [
+        "set_evt_0010_s9"
+      ]
+    },
+    {
+      "eventId": "evt_0011",
+      "discrepancyType": "splitPayment",
+      "bankTxnIds": [
+        "bank_evt_0011_s10_p1",
+        "bank_evt_0011_s10_p2"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0011_s10"
+      ],
+      "settlementIds": []
+    },
+    {
+      "eventId": "evt_0012",
+      "discrepancyType": "duplicateEntry",
+      "bankTxnIds": [
+        "bank_evt_0012_s11"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0012_s11",
+        "led_evt_0012_s11_dup"
+      ],
+      "settlementIds": [
+        "set_evt_0012_s11"
+      ]
+    },
+    {
+      "eventId": "evt_0013",
+      "discrepancyType": "currencyRounding",
+      "bankTxnIds": [
+        "bank_evt_0013_s12"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0013_s12"
+      ],
+      "settlementIds": [
+        "set_evt_0013_s12"
+      ]
+    },
+    {
+      "eventId": "evt_0014",
+      "discrepancyType": "duplicateEntry",
+      "bankTxnIds": [
+        "bank_evt_0014_s13"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0014_s13",
+        "led_evt_0014_s13_dup"
+      ],
+      "settlementIds": [
+        "set_evt_0014_s13"
+      ]
+    },
+    {
+      "eventId": "evt_0015",
+      "discrepancyType": "partialCapture",
+      "bankTxnIds": [
+        "bank_evt_0015_s14"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0015_s14"
+      ],
+      "settlementIds": [
+        "set_evt_0015_s14"
+      ]
+    },
+    {
+      "eventId": "evt_0016",
+      "discrepancyType": "exactMatch",
+      "bankTxnIds": [
+        "bank_evt_0016_s15"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0016_s15"
+      ],
+      "settlementIds": [
+        "set_evt_0016_s15"
+      ]
+    },
+    {
+      "eventId": "evt_0017",
+      "discrepancyType": "exactMatch",
+      "bankTxnIds": [
+        "bank_evt_0017_s16"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0017_s16"
+      ],
+      "settlementIds": [
+        "set_evt_0017_s16"
+      ]
+    },
+    {
+      "eventId": "evt_0018",
+      "discrepancyType": "settlementLag",
+      "bankTxnIds": [
+        "bank_evt_0018_s17"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0018_s17"
+      ],
+      "settlementIds": [
+        "set_evt_0018_s17"
+      ]
+    },
+    {
+      "eventId": "evt_0019",
+      "discrepancyType": "feeDeduction",
+      "bankTxnIds": [
+        "bank_evt_0019_s18"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0019_s18"
+      ],
+      "settlementIds": [
+        "set_evt_0019_s18"
+      ]
+    },
+    {
+      "eventId": "evt_0020",
+      "discrepancyType": "settlementLag",
+      "bankTxnIds": [
+        "bank_evt_0020_s19"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0020_s19"
+      ],
+      "settlementIds": [
+        "set_evt_0020_s19"
+      ]
+    },
+    {
+      "eventId": "evt_0021",
+      "discrepancyType": "splitPayment",
+      "bankTxnIds": [
+        "bank_evt_0021_s20_p1",
+        "bank_evt_0021_s20_p2"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0021_s20"
+      ],
+      "settlementIds": []
+    },
+    {
+      "eventId": "evt_0022",
+      "discrepancyType": "exactMatch",
+      "bankTxnIds": [
+        "bank_evt_0022_s21"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0022_s21"
+      ],
+      "settlementIds": [
+        "set_evt_0022_s21"
+      ]
+    },
+    {
+      "eventId": "evt_0023",
+      "discrepancyType": "exactMatch",
+      "bankTxnIds": [
+        "bank_evt_0023_s22"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0023_s22"
+      ],
+      "settlementIds": [
+        "set_evt_0023_s22"
+      ]
+    },
+    {
+      "eventId": "evt_0024",
+      "discrepancyType": "currencyRounding",
+      "bankTxnIds": [
+        "bank_evt_0024_s23"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0024_s23"
+      ],
+      "settlementIds": [
+        "set_evt_0024_s23"
+      ]
+    },
+    {
+      "eventId": "evt_0025",
+      "discrepancyType": "manyToOne",
+      "bankTxnIds": [
+        "bank_evt_0025_s24"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0025_s24_a",
+        "led_evt_0025_s24_b"
+      ],
+      "settlementIds": [
+        "set_evt_0025_s24"
+      ]
+    },
+    {
+      "eventId": "evt_0026",
+      "discrepancyType": "trueOrphan",
+      "bankTxnIds": [],
+      "ledgerEntryIds": [
+        "led_evt_0026_s25"
+      ],
+      "settlementIds": []
+    },
+    {
+      "eventId": "evt_0027",
+      "discrepancyType": "currencyRounding",
+      "bankTxnIds": [
+        "bank_evt_0027_s26"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0027_s26"
+      ],
+      "settlementIds": [
+        "set_evt_0027_s26"
+      ]
+    },
+    {
+      "eventId": "evt_0028",
+      "discrepancyType": "feeDeduction",
+      "bankTxnIds": [
+        "bank_evt_0028_s27"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0028_s27"
+      ],
+      "settlementIds": [
+        "set_evt_0028_s27"
+      ]
+    },
+    {
+      "eventId": "evt_0029",
+      "discrepancyType": "exactMatch",
+      "bankTxnIds": [
+        "bank_evt_0029_s28"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0029_s28"
+      ],
+      "settlementIds": [
+        "set_evt_0029_s28"
+      ]
+    },
+    {
+      "eventId": "evt_0030",
+      "discrepancyType": "splitPayment",
+      "bankTxnIds": [
+        "bank_evt_0030_s29_p1",
+        "bank_evt_0030_s29_p2"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0030_s29"
+      ],
+      "settlementIds": []
+    },
+    {
+      "eventId": "evt_0031",
+      "discrepancyType": "exactMatch",
+      "bankTxnIds": [
+        "bank_evt_0031_s30"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0031_s30"
+      ],
+      "settlementIds": [
+        "set_evt_0031_s30"
+      ]
+    },
+    {
+      "eventId": "evt_0032",
+      "discrepancyType": "partialCapture",
+      "bankTxnIds": [
+        "bank_evt_0032_s31"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0032_s31"
+      ],
+      "settlementIds": [
+        "set_evt_0032_s31"
+      ]
+    },
+    {
+      "eventId": "evt_0033",
+      "discrepancyType": "settlementLag",
+      "bankTxnIds": [
+        "bank_evt_0033_s32"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0033_s32"
+      ],
+      "settlementIds": [
+        "set_evt_0033_s32"
+      ]
+    },
+    {
+      "eventId": "evt_0034",
+      "discrepancyType": "exactMatch",
+      "bankTxnIds": [
+        "bank_evt_0034_s33"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0034_s33"
+      ],
+      "settlementIds": [
+        "set_evt_0034_s33"
+      ]
+    },
+    {
+      "eventId": "evt_0035",
+      "discrepancyType": "partialCapture",
+      "bankTxnIds": [
+        "bank_evt_0035_s34"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0035_s34"
+      ],
+      "settlementIds": [
+        "set_evt_0035_s34"
+      ]
+    },
+    {
+      "eventId": "evt_0036",
+      "discrepancyType": "partialCapture",
+      "bankTxnIds": [
+        "bank_evt_0036_s35"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0036_s35"
+      ],
+      "settlementIds": [
+        "set_evt_0036_s35"
+      ]
+    },
+    {
+      "eventId": "evt_0037",
+      "discrepancyType": "feeDeduction",
+      "bankTxnIds": [
+        "bank_evt_0037_s36"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0037_s36"
+      ],
+      "settlementIds": [
+        "set_evt_0037_s36"
+      ]
+    },
+    {
+      "eventId": "evt_0038",
+      "discrepancyType": "duplicateEntry",
+      "bankTxnIds": [
+        "bank_evt_0038_s37"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0038_s37",
+        "led_evt_0038_s37_dup"
+      ],
+      "settlementIds": [
+        "set_evt_0038_s37"
+      ]
+    },
+    {
+      "eventId": "evt_0039",
+      "discrepancyType": "exactMatch",
+      "bankTxnIds": [
+        "bank_evt_0039_s38"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0039_s38"
+      ],
+      "settlementIds": [
+        "set_evt_0039_s38"
+      ]
+    },
+    {
+      "eventId": "evt_0040",
+      "discrepancyType": "feeDeduction",
+      "bankTxnIds": [
+        "bank_evt_0040_s39"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0040_s39"
+      ],
+      "settlementIds": [
+        "set_evt_0040_s39"
+      ]
+    },
+    {
+      "eventId": "evt_0041",
+      "discrepancyType": "feeDeduction",
+      "bankTxnIds": [
+        "bank_evt_0041_s40"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0041_s40"
+      ],
+      "settlementIds": [
+        "set_evt_0041_s40"
+      ]
+    },
+    {
+      "eventId": "evt_0042",
+      "discrepancyType": "exactMatch",
+      "bankTxnIds": [
+        "bank_evt_0042_s41"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0042_s41"
+      ],
+      "settlementIds": [
+        "set_evt_0042_s41"
+      ]
+    },
+    {
+      "eventId": "evt_0043",
+      "discrepancyType": "exactMatch",
+      "bankTxnIds": [
+        "bank_evt_0043_s42"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0043_s42"
+      ],
+      "settlementIds": [
+        "set_evt_0043_s42"
+      ]
+    },
+    {
+      "eventId": "evt_0044",
+      "discrepancyType": "settlementLag",
+      "bankTxnIds": [
+        "bank_evt_0044_s43"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0044_s43"
+      ],
+      "settlementIds": [
+        "set_evt_0044_s43"
+      ]
+    },
+    {
+      "eventId": "evt_0045",
+      "discrepancyType": "exactMatch",
+      "bankTxnIds": [
+        "bank_evt_0045_s44"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0045_s44"
+      ],
+      "settlementIds": [
+        "set_evt_0045_s44"
+      ]
+    },
+    {
+      "eventId": "evt_0046",
+      "discrepancyType": "splitPayment",
+      "bankTxnIds": [
+        "bank_evt_0046_s45_p1",
+        "bank_evt_0046_s45_p2"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0046_s45"
+      ],
+      "settlementIds": []
+    },
+    {
+      "eventId": "evt_0047",
+      "discrepancyType": "feeDeduction",
+      "bankTxnIds": [
+        "bank_evt_0047_s46"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0047_s46"
+      ],
+      "settlementIds": [
+        "set_evt_0047_s46"
+      ]
+    },
+    {
+      "eventId": "evt_0048",
+      "discrepancyType": "manyToOne",
+      "bankTxnIds": [
+        "bank_evt_0048_s47"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0048_s47_a",
+        "led_evt_0048_s47_b"
+      ],
+      "settlementIds": [
+        "set_evt_0048_s47"
+      ]
+    },
+    {
+      "eventId": "evt_0049",
+      "discrepancyType": "duplicateEntry",
+      "bankTxnIds": [
+        "bank_evt_0049_s48"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0049_s48",
+        "led_evt_0049_s48_dup"
+      ],
+      "settlementIds": [
+        "set_evt_0049_s48"
+      ]
+    },
+    {
+      "eventId": "evt_0050",
+      "discrepancyType": "currencyRounding",
+      "bankTxnIds": [
+        "bank_evt_0050_s49"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0050_s49"
+      ],
+      "settlementIds": [
+        "set_evt_0050_s49"
+      ]
+    },
+    {
+      "eventId": "evt_0051",
+      "discrepancyType": "feeDeduction",
+      "bankTxnIds": [
+        "bank_evt_0051_s50"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0051_s50"
+      ],
+      "settlementIds": [
+        "set_evt_0051_s50"
+      ]
+    },
+    {
+      "eventId": "evt_0052",
+      "discrepancyType": "trueOrphan",
+      "bankTxnIds": [
+        "bank_evt_0052_s51"
+      ],
+      "ledgerEntryIds": [],
+      "settlementIds": []
+    },
+    {
+      "eventId": "evt_0053",
+      "discrepancyType": "manyToOne",
+      "bankTxnIds": [
+        "bank_evt_0053_s52"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0053_s52_a",
+        "led_evt_0053_s52_b"
+      ],
+      "settlementIds": [
+        "set_evt_0053_s52"
+      ]
+    },
+    {
+      "eventId": "evt_0054",
+      "discrepancyType": "currencyRounding",
+      "bankTxnIds": [
+        "bank_evt_0054_s53"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0054_s53"
+      ],
+      "settlementIds": [
+        "set_evt_0054_s53"
+      ]
+    },
+    {
+      "eventId": "evt_0055",
+      "discrepancyType": "exactMatch",
+      "bankTxnIds": [
+        "bank_evt_0055_s54"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0055_s54"
+      ],
+      "settlementIds": [
+        "set_evt_0055_s54"
+      ]
+    },
+    {
+      "eventId": "evt_0056",
+      "discrepancyType": "trueOrphan",
+      "bankTxnIds": [],
+      "ledgerEntryIds": [
+        "led_evt_0056_s55"
+      ],
+      "settlementIds": []
+    },
+    {
+      "eventId": "evt_0057",
+      "discrepancyType": "partialCapture",
+      "bankTxnIds": [
+        "bank_evt_0057_s56"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0057_s56"
+      ],
+      "settlementIds": [
+        "set_evt_0057_s56"
+      ]
+    },
+    {
+      "eventId": "evt_0058",
+      "discrepancyType": "partialCapture",
+      "bankTxnIds": [
+        "bank_evt_0058_s57"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0058_s57"
+      ],
+      "settlementIds": [
+        "set_evt_0058_s57"
+      ]
+    },
+    {
+      "eventId": "evt_0059",
+      "discrepancyType": "settlementLag",
+      "bankTxnIds": [
+        "bank_evt_0059_s58"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0059_s58"
+      ],
+      "settlementIds": [
+        "set_evt_0059_s58"
+      ]
+    },
+    {
+      "eventId": "evt_0060",
+      "discrepancyType": "currencyRounding",
+      "bankTxnIds": [
+        "bank_evt_0060_s59"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0060_s59"
+      ],
+      "settlementIds": [
+        "set_evt_0060_s59"
+      ]
+    },
+    {
+      "eventId": "evt_0061",
+      "discrepancyType": "settlementLag",
+      "bankTxnIds": [
+        "bank_evt_0061_s60"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0061_s60"
+      ],
+      "settlementIds": [
+        "set_evt_0061_s60"
+      ]
+    },
+    {
+      "eventId": "evt_0062",
+      "discrepancyType": "currencyRounding",
+      "bankTxnIds": [
+        "bank_evt_0062_s61"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0062_s61"
+      ],
+      "settlementIds": [
+        "set_evt_0062_s61"
+      ]
+    },
+    {
+      "eventId": "evt_0063",
+      "discrepancyType": "currencyRounding",
+      "bankTxnIds": [
+        "bank_evt_0063_s62"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0063_s62"
+      ],
+      "settlementIds": [
+        "set_evt_0063_s62"
+      ]
+    },
+    {
+      "eventId": "evt_0064",
+      "discrepancyType": "manyToOne",
+      "bankTxnIds": [
+        "bank_evt_0064_s63"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0064_s63_a",
+        "led_evt_0064_s63_b"
+      ],
+      "settlementIds": [
+        "set_evt_0064_s63"
+      ]
+    },
+    {
+      "eventId": "evt_0065",
+      "discrepancyType": "exactMatch",
+      "bankTxnIds": [
+        "bank_evt_0065_s64"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0065_s64"
+      ],
+      "settlementIds": [
+        "set_evt_0065_s64"
+      ]
+    },
+    {
+      "eventId": "evt_0066",
+      "discrepancyType": "exactMatch",
+      "bankTxnIds": [
+        "bank_evt_0066_s65"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0066_s65"
+      ],
+      "settlementIds": [
+        "set_evt_0066_s65"
+      ]
+    },
+    {
+      "eventId": "evt_0067",
+      "discrepancyType": "duplicateEntry",
+      "bankTxnIds": [
+        "bank_evt_0067_s66"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0067_s66",
+        "led_evt_0067_s66_dup"
+      ],
+      "settlementIds": [
+        "set_evt_0067_s66"
+      ]
+    },
+    {
+      "eventId": "evt_0068",
+      "discrepancyType": "trueOrphan",
+      "bankTxnIds": [],
+      "ledgerEntryIds": [
+        "led_evt_0068_s67"
+      ],
+      "settlementIds": []
+    },
+    {
+      "eventId": "evt_0069",
+      "discrepancyType": "exactMatch",
+      "bankTxnIds": [
+        "bank_evt_0069_s68"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0069_s68"
+      ],
+      "settlementIds": [
+        "set_evt_0069_s68"
+      ]
+    },
+    {
+      "eventId": "evt_0070",
+      "discrepancyType": "manyToOne",
+      "bankTxnIds": [
+        "bank_evt_0070_s69"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0070_s69_a",
+        "led_evt_0070_s69_b"
+      ],
+      "settlementIds": [
+        "set_evt_0070_s69"
+      ]
+    },
+    {
+      "eventId": "evt_0071",
+      "discrepancyType": "trueOrphan",
+      "bankTxnIds": [],
+      "ledgerEntryIds": [
+        "led_evt_0071_s70"
+      ],
+      "settlementIds": []
+    },
+    {
+      "eventId": "evt_0072",
+      "discrepancyType": "exactMatch",
+      "bankTxnIds": [
+        "bank_evt_0072_s71"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0072_s71"
+      ],
+      "settlementIds": [
+        "set_evt_0072_s71"
+      ]
+    },
+    {
+      "eventId": "evt_0073",
+      "discrepancyType": "partialCapture",
+      "bankTxnIds": [
+        "bank_evt_0073_s72"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0073_s72"
+      ],
+      "settlementIds": [
+        "set_evt_0073_s72"
+      ]
+    },
+    {
+      "eventId": "evt_0074",
+      "discrepancyType": "settlementLag",
+      "bankTxnIds": [
+        "bank_evt_0074_s73"
+      ],
+      "ledgerEntryIds": [
+        "led_evt_0074_s73"
+      ],
+      "settlementIds": [
+        "set_evt_0074_s73"
+      ]
+    },
+    {
+      "eventId": "evt_0075",
+      "discrepancyType": "trueOrphan",
+      "bankTxnIds": [],
+      "ledgerEntryIds": [],
+      "settlementIds": [
+        "set_evt_0075_s74"
+      ]
+    }
+  ]
+}

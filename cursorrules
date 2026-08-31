@@ -3,11 +3,11 @@
 ## Project
 A 3-way financial reconciliation agent that matches records across
 BankTransaction, LedgerEntry, and SettlementRecord tables, using the
-Claude API for ambiguous-match reasoning, and reports a measured match
+Gemini API for ambiguous-match reasoning, and reports a measured match
 rate plus an honest, explained exception list for unresolved records.
 
 Authoritative docs (do not contradict; decision-doc wins on conflict):
-- `decision-doc.md` — locked decisions D1–D8
+- `decision-doc.md` — locked decisions D1–D9
 - `design-doc.md` — how the system works (taxonomy, tiers, metrics, UI)
 - This file — day-to-day coding constraints for Cursor
 
@@ -18,19 +18,20 @@ Authoritative docs (do not contradict; decision-doc wins on conflict):
 ├── decision-doc.md
 ├── design-doc.md
 ├── docker-compose.yml      # local Postgres — use this, not prisma dev
+├── docs/superpowers/       # Phase 2 remediation spec + plan (2026-08-29)
 ├── .gitignore
-├── .env                    # root leftover; leave until user confirms delete
-├── tsconfig.json           # root leftover; leave until user confirms delete
 ├── ground-truth/
-│   └── event-mapping.json  # agent must NEVER read this
+│   └── event-mapping.json  # agent must NEVER read this (populated by seed)
 ├── server/                 # Express + Prisma + recon engine
-│   ├── .env                # ACTIVE env (DATABASE_URL, ANTHROPIC_API_KEY)
+│   ├── .env                # ACTIVE env (DATABASE_URL, GEMINI_API_KEY)
 │   ├── prisma/
 │   │   ├── schema.prisma
 │   │   └── migrations/20260826202101_init/
 │   ├── prisma.config.ts
-│   ├── package.json
-│   └── src/                # stubs + real prisma singleton only (see Status)
+│   ├── package.json        # npm run seed → tsx src/data-generation/seedDatabase.ts
+│   └── src/
+│       ├── db/prisma.ts    # real PrismaClient singleton
+│       └── data-generation/  # Phase 2 implemented (see Status)
 └── client/                 # Vite + React + TS dashboard (stubs)
 ```
 Do NOT reintroduce root-level `package.json`, `node_modules/`, `prisma/`,
@@ -50,9 +51,14 @@ or `src/`. Packages live under `server/` and `client/` only.
     + `migrate` / `format` / `validate` workflow only
   - Schema + migrations live only under `server/prisma/`
   - Shared client: `server/src/db/prisma.ts` (singleton — import this)
-- LLM: Anthropic Claude API via official `@anthropic-ai/sdk`, direct
-  calls — NEVER LangChain, LlamaIndex, or other agent frameworks.
-  NEVER suggest OpenAI, Gemini, or Groq as alternatives.
+- LLM: Google Gemini API via official `@google/generative-ai` SDK,
+  direct calls — NEVER LangChain, LlamaIndex, or other agent
+  frameworks. NEVER suggest OpenAI, Anthropic/Claude, or Groq as
+  alternatives (see decision-doc.md D4 — Claude was the original
+  choice, reversed due to a billing/credit issue on the Anthropic
+  account, not a quality concern; do not silently switch back if
+  Claude is mentioned elsewhere in context, e.g. in casual references
+  to "the AI" or in this project's own history).
 - Package manager: npm (run installs inside `server/` or `client/`)
 
 ## Local DB rules
@@ -63,27 +69,53 @@ or `src/`. Packages live under `server/` and `client/` only.
 - Active `DATABASE_URL` is in `server/.env` only:
   `postgresql://aifc_user:aifc_dev_pw@localhost:5432/ai_finance_controller?schema=public`
 
-## Session status (as of 2026-08-27 wrap-up)
-DONE:
-- Schema + init migration applied on Docker Postgres (all 4 tables empty)
-- Full folder scaffold for server + client + ground-truth
-- `server/src/db/prisma.ts` has real PrismaClient singleton
-- Root pre-split strays deleted (root node_modules, package.json,
-  package-lock, prisma/, prisma.config.ts, empty src/)
+## Session status (as of 2026-08-29 evening wrap — supersedes earlier
+## snapshots; decision-doc.md D4 remains LLM tiebreaker)
+Branch: `phase2-remediation` (not merged to main). Spec/plan:
+`docs/superpowers/specs/2026-08-29-phase2-remediation-design.md`,
+`docs/superpowers/plans/2026-08-29-phase2-remediation.md`.
 
-NOT DONE (files are purpose-comment stubs only — fill when asked):
-- Synthetic data generation (`server/src/data-generation/**`)
+**Phase 2 COMPLETE** (data generation + seed + gate). Next session: Phase 3
+(reconciliation engine) — do not re-litigate Phase 2 unless gate evidence
+is wiped.
+
+DONE:
+- Schema + init migration applied on `aifc_postgres` (healthy)
+- Full folder scaffold for server + client + ground-truth
+- `server/src/db/prisma.ts` PrismaClient singleton
+- Root pre-split strays deleted
+- LLM provider locked to Gemini (D4 REVISED) — SDK not wired yet (Phase 3+)
+- `server/.env` present with `DATABASE_URL` (do not commit secrets)
+- Phase 2 full pipeline on `phase2-remediation`:
+  - `taxonomy.ts` — 9 types, `TAXONOMY_IDS`, expanded `affectedTables`
+    for settlementLag / feeDeduction / partialCapture; `isOrphan` only
+    on trueOrphan; `verifyTaxonomyAlignment.ts` passes
+  - `generateTrueEvents.ts` — seeded Mulberry32, 2-decimal string amounts
+  - `discrepancies/types.ts` + all 9 generators using `TAXONOMY_IDS`
+  - `seedDatabase.ts` — wipe-reseed, quotas 75 / seed 42 / trueOrphan:6,
+    blunt `seedDatabase ABORT:` failures
+  - `npm run seed` via **tsx** (TS7 breaks ts-node here)
+  - Gate verified: mapping populated (75 events, 6 orphans); DB counts
+    bank 76 / ledger 85 / settlement 64; sampled orphans (null links),
+    feeDeduction (net < gross), settlementLag (bank = ledger + 2d)
+
+NOT DONE (Phase 3+):
 - Reconciliation Tier 1 / Tier 2 / router / run
 - Metrics + exception list
 - API routes + Express `index.ts`
-- Client UI components (RunTrigger, MetricsSummary, ExceptionList, QnA)
+- Client UI (RunTrigger, MetricsSummary, ExceptionList, QnA)
 - Settlement Q&A stretch layer
-- Populating `ground-truth/event-mapping.json`
+- Gemini API key / `@google/generative-ai` in Tier 2
+- Merge `phase2-remediation` → main when user is ready
+- Agent shells may need `sg docker -c '...'` until re-login for docker group
+- Commit/review uncommitted `cursorrules` / docs edits before merge
 
 Open items (do not silently decide — see design-doc):
 - FK constraints after data generation validated (D7)
 - Exact Tier 1→2 confidence threshold (tune on real data)
 - Where ground-truth ORIGIN mapping is stored long-term
+- Align remaining docs that still say `ts-node` for seed with `tsx`
+- Optional: wrap seed wipe+inserts in `prisma.$transaction()`
 
 ## Core domain rules (do not violate when generating schema, data, or logic)
 1. All monetary amounts are Prisma `Decimal`, never `Float` or `Int`.
@@ -98,7 +130,7 @@ Open items (do not silently decide — see design-doc):
    Never bare boolean or unstructured prose only.
 5. Exact matches (exact ID + amount + timestamp) → plain TypeScript
    (Tier 1). Ambiguous cases (fee deduction, settlement lag,
-   split/many-to-one, partial capture, duplicates, rounding) → Claude
+   split/many-to-one, partial capture, duplicates, rounding) → Gemini
    (Tier 2). Ask before treating a case as deterministic enough to skip LLM.
 6. Never inflate match rate by force-fitting. Honest exceptions with
    reasoning are correct outputs.

@@ -52,26 +52,48 @@ ORM.
 
 ---
 
-## D4 — LLM: Claude API, direct SDK, no framework
-**Decision:** `@anthropic-ai/sdk`, direct calls. No LangChain, no
-LlamaIndex. No Gemini, no Groq.
+## D4 — LLM: Gemini API, direct SDK, no framework (REVISED)
+**Original decision (superseded):** Claude API via `@anthropic-ai/sdk`,
+based on an assumption that new Anthropic Console accounts receive an
+automatic $5 trial credit with no card required. This assumption was
+WRONG — checked directly against a live Console dashboard showing
+$0.00 organization credit with no trial applied, and confirmed against
+Anthropic's own support documentation, which describes a fund-your-
+account flow requiring payment details, not an automatic grant.
+Several third-party sources had claimed an auto-grant existed; they
+were either wrong, describing a discontinued program, or describing
+conditions that didn't apply to this account. Do not trust the earlier
+version of this entry, and do not re-litigate switching back to Claude
+based on a resurfaced claim of a free credit without verifying it live
+on the actual Console dashboard first.
 
-**Alternatives considered and rejected:**
-- Groq: inference platform, not a model provider — free tier is
-  rate-limited, real risk of hitting a cap mid-build under hackathon
-  time pressure.
-- Gemini: usable free tier, but structured-output reliability under
-  the same reasoning load is less certain, and the core differentiator
-  of this project (structured confidence + reasoning on ambiguous
-  matches) is exactly the place you don't want new uncertainty.
-- LangChain/frameworks: abstraction overhead that costs debugging time
-  without adding capability this project needs at this scale.
+**Revised decision:** `@google/generative-ai` (Gemini), direct SDK
+calls. No LangChain, no LlamaIndex.
 
-**Cost reality check (why "free" wasn't actually necessary):** full
-pipeline run ≈ 50–100K tokens ≈ fractions of a dollar on Sonnet
-pricing. New Anthropic Console accounts get a $5 trial credit, no card
-required. This comfortably covers many full dev-cycle iterations.
-Confirmed live and in use.
+**Why Gemini over Groq specifically:** Groq is an inference platform
+(fast serving of various open models, not its own frontier model
+family) — free tier is request-rate-limited, real risk of hitting a
+cap mid-build during rapid Tier 2 prompt iteration. Gemini's free tier
+is more generous for exploratory/iterative usage, and Google has
+specifically invested in schema-constrained structured output, which
+is exactly what Tier 2's `{ status, confidence, discrepancyType,
+reasoning }` shape needs (design doc Section 4).
+
+**Known residual risk, carried forward openly rather than hidden:**
+structured-output reliability under Gemini has not been validated
+against this project's actual ambiguous-match reasoning load yet —
+this needs real testing once Phase 4 starts, with the same scrutiny
+the original Claude-based plan would have gotten. Do not assume parity
+with Claude's tool-use reliability without checking real output.
+
+**Blast radius of this change (contained, not full rework):**
+Unaffected: schema, Phase 2 data generation, Tier 1 deterministic
+matching, types, metrics module, UI. Affected: `tier2-llm/` folder
+contents (`claudeClient.ts` → renamed/rewritten against Gemini SDK,
+`buildReconciliationPrompt.ts` adjusted for Gemini's prompt format,
+`parseReconciliationResponse.ts` rewritten for Gemini's JSON mode
+instead of Claude's tool-use blocks), and the LLM dependency in
+`server/package.json`.
 
 ---
 
@@ -79,7 +101,8 @@ Confirmed live and in use.
 **Decision:** Exact-match cases (same ID + same amount + same
 timestamp) are resolved in plain TypeScript, never sent to the LLM.
 Ambiguous cases (fee deduction, settlement lag, split/many-to-one,
-partial capture, duplicates) are routed to Claude for reasoning.
+partial capture, duplicates) are routed to the LLM (Gemini, per
+revised D4) for reasoning.
 
 **Why:** Cost efficiency, but more importantly: this is a legitimate
 architectural talking point for judging ("we route by match
@@ -128,3 +151,31 @@ build risks the agent forgetting constraints between sessions or
 "helpfully" simplifying something load-bearing (e.g. auto-computing
 `netAmount` when it needs to stay independently editable for injected
 discrepancies).
+
+---
+
+## D9 — Local Postgres via Docker, not `prisma dev`
+**Decision:** Local development database runs via
+`docker-compose.yml` at project root (postgres:16.6, named volume
+`aifc_pgdata`, container `aifc_postgres`, port 5432), not via
+`prisma dev`'s ephemeral local instance.
+
+**Why:** `prisma dev` creates a database tied to a running background
+process — genuinely useful for zero-setup quick starts, but not
+durable storage. It does not survive a stopped process, and in this
+project's first setup attempt, Cursor silently fell back to `prisma
+dev` when Docker wasn't running (Docker was installed but Docker
+Desktop itself hadn't been started), which produced a working-looking
+migration against a database that would not have persisted reliably
+across sessions — a real risk for a multi-session hackathon build
+generating hand-crafted synthetic data. A named Docker volume
+guarantees data survives container restarts as long as the volume
+isn't explicitly removed.
+
+**Verified state (locked):** `aifc_postgres` container `Up (healthy)`,
+`server/.env` DATABASE_URL points at
+`postgresql://aifc_user:aifc_dev_pw@localhost:5432/ai_finance_controller`,
+migration applied, all four tables present and confirmed at 0 rows.
+Before any future session assumes the database is reachable, confirm
+`docker ps` shows `aifc_postgres` as `Up`, not just installed — Docker
+Desktop must be manually running; it does not auto-start.
