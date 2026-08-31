@@ -3,38 +3,60 @@
 ## Project
 A 3-way financial reconciliation agent that matches records across
 BankTransaction, LedgerEntry, and SettlementRecord tables, using
-Groq (Gemini failover) for ambiguous-match reasoning, and reports a
-measured match rate plus an honest, explained exception list for
-unresolved records.
+**Groq primary** (Gemini failover) for ambiguous-match reasoning, and
+reports a measured match rate plus an honest, explained exception list
+for unresolved records.
 
 Authoritative docs (do not contradict; decision-doc wins on conflict):
-- `decision-doc.md` — locked decisions D1–D9
+- `decision-doc.md` — locked decisions D1–D9 (D4 originally Gemini; ops
+  override below is intentional for free-tier reliability)
 - `design-doc.md` — how the system works (taxonomy, tiers, metrics, UI)
 - This file — day-to-day coding constraints for Cursor
 
-## Current repo layout (post client/server split)
+## Current repo layout
 ```
 ./
 ├── cursorrules
 ├── decision-doc.md
 ├── design-doc.md
-├── docker-compose.yml      # local Postgres — use this, not prisma dev
-├── docs/superpowers/       # Phase 2 remediation spec + plan
+├── docker-compose.yml          # postgres:16.6 → aifc_postgres
+├── docs/superpowers/           # Phase 2 remediation spec + plan
 ├── .gitignore
 ├── ground-truth/
-│   └── event-mapping.json  # agent must NEVER read this (populated by seed)
-├── server/                 # Express + Prisma + recon engine
-│   ├── .env                # DATABASE_URL, GROQ_API_KEY, GEMINI_API_KEY
-│   ├── prisma/
-│   ├── package.json        # seed / reconcile / dev (API)
+│   └── event-mapping.json      # NEVER feed to Tier-2 / agent prompts
+├── server/
+│   ├── .env                    # DATABASE_URL, GROQ_*, GEMINI_*
+│   ├── prisma/schema.prisma + migrations/20260826202101_init/
+│   ├── prisma.config.ts
+│   ├── package.json
 │   └── src/
-│       ├── db/prisma.ts
-│       ├── data-generation/   # Phase 2
-│       ├── reconciliation/    # Phase 3
-│       ├── metrics/           # Phase 3
-│       ├── routes/            # Express API
-│       └── index.ts           # API entry (port 3001)
-└── client/                 # Vite + React dashboard (thin demo UI)
+│       ├── index.ts            # Express API :3001
+│       ├── db/prisma.ts        # PrismaClient singleton
+│       ├── types/reconciliation.types.ts
+│       ├── data-generation/    # Phase 2 seed pipeline
+│       ├── reconciliation/
+│       │   ├── tier1-deterministic/exactMatcher.ts
+│       │   ├── tier2-llm/
+│       │   │   ├── groqClient.ts              # PRIMARY
+│       │   │   ├── geminiClient.ts            # FAILOVER
+│       │   │   ├── buildReconciliationPrompt.ts
+│       │   │   ├── parseReconciliationResponse.ts  # JSON repair helpers
+│       │   │   └── claudeClient.ts            # RETIRED — throws if imported
+│       │   ├── router.ts
+│       │   └── runReconciliation.ts
+│       ├── metrics/            # matchRate, tierSplit, breakdown, exceptions,
+│       │                       # validateAgainstGroundTruth
+│       ├── routes/
+│       │   ├── reconciliation.routes.ts
+│       │   ├── metrics.routes.ts
+│       │   └── qna.routes.ts   # stretch — 501 for now
+│       └── qna/                # stretch stub
+└── client/                     # Vite + React thin dashboard
+    ├── vite.config.ts          # proxies /api → :3001
+    └── src/
+        ├── App.tsx / main.tsx
+        ├── api/client.ts
+        └── components/{RunTrigger,MetricsSummary,ExceptionList,QnA}
 ```
 Do NOT reintroduce root-level `package.json`, `node_modules/`, `prisma/`,
 or `src/`. Packages live under `server/` and `client/` only.
@@ -46,98 +68,119 @@ or `src/`. Packages live under `server/` and `client/` only.
   - image: `postgres:16.6`
   - container_name: `aifc_postgres`
   - named volume: `aifc_pgdata` (persists across restarts)
-  - credentials: `aifc_user` / `aifc_dev_pw` / db `ai_finance_controller`
-  - host port: 5432
-- ORM: Prisma **6.x** (`prisma` + `@prisma/client` pinned ~6.19)
-  - NEVER upgrade to Prisma 8 / Composer CLI
+  - user/pass/db: `aifc_user` / `aifc_dev_pw` / `ai_finance_controller`
+  - host port: `5432`
+- ORM: Prisma **6.x** only (`~6.19`) — never Prisma 8 / Composer CLI
   - Schema + migrations only under `server/prisma/`
-  - Shared client: `server/src/db/prisma.ts`
-- LLM: **Groq primary** (`groq-sdk`, `GROQ_API_KEY`, default model
-  `openai/gpt-oss-20b` via `GROQ_MODEL`). **Failover only:** Gemini
-  (`@google/generative-ai`, `GEMINI_API_KEY`) on Groq
-  quota/429/503/model_not_found/json_validate_failed (or missing key).
-  Groq JSON failures: recover `failed_generation` → one repair retry →
-  then Gemini failover. NEVER LangChain/LlamaIndex. NEVER silently
-  switch primary to OpenAI/Claude or back to Gemini without an explicit
-  user request.
-- Package manager: npm (install inside `server/` or `client/`)
+  - Import DB via `server/src/db/prisma.ts` singleton
+- LLM (operational):
+  - **Primary:** Groq (`groq-sdk`) — `GROQ_API_KEY`,
+    `GROQ_MODEL=openai/gpt-oss-20b` (verified; `llama-3.1-8b-instant`
+    returned `model_not_found` on this account)
+  - **Failover:** Gemini (`@google/generative-ai`) — `GEMINI_API_KEY`,
+    `GEMINI_MODEL=gemini-flash-latest` (or override)
+  - Failover triggers: Groq 429/503/quota/`model_not_found`/
+    `json_validate_failed`, or missing `GROQ_API_KEY`
+  - Groq JSON recovery: extract `failed_generation` → repair/parse →
+    one repair retry → then Gemini failover
+  - Reasoning tags: `[via groq/…]`, `[via groq-repaired/…]`,
+    `[via gemini-fallback/…]`
+  - NEVER LangChain / LlamaIndex; NEVER silently make OpenAI/Claude
+    primary; NEVER flip primary back to Gemini without explicit request
+- Money: `decimal.js` + Prisma `Decimal` — never JS float math
+- Package manager: npm (run installs inside `server/` or `client/`)
+- Server scripts (use these):
+  - `npm run seed` → `tsx src/data-generation/seedDatabase.ts`
+  - `npm run reconcile` / `reconcile:tier1`
+  - `npm run dev` / `start` → `tsx src/index.ts` (API :3001)
+  - Prefer **tsx** over ts-node (TS7 breaks ts-node here)
 
 ## Local DB rules
-- Start DB with: `docker compose up -d` from project root.
-- Confirm healthy: `docker ps` → `aifc_postgres` running/healthy.
-- If a Docker command fails: STOP and report the exact error.
-  Do NOT fall back to `prisma dev` or any ephemeral Postgres.
-- Active `DATABASE_URL` is in `server/.env` only.
+- `docker compose up -d` from project root.
+- Confirm: `docker ps` → `aifc_postgres` healthy.
+- Docker failure → STOP and report exact error. No `prisma dev` fallback.
+- Active `DATABASE_URL` only in `server/.env`:
+  `postgresql://aifc_user:aifc_dev_pw@localhost:5432/ai_finance_controller?schema=public`
 
-## Session status (as of 2026-08-31 — supersedes earlier snapshots)
-Branch: typically `phase2-remediation` (confirm with `git branch`).
+## How to run the demo
+```bash
+# DB
+docker compose up -d
 
-**Phase 2 COMPLETE.** **Phase 3 engine + metrics + thin API/UI DONE.**
+# API
+cd server && npm run dev          # http://localhost:3001
+
+# UI (separate terminal)
+cd client && npm run dev          # http://localhost:5173 (proxies /api)
+```
+Optional CLI without UI: `cd server && npm run seed && npm run reconcile`
+
+API surface:
+- `GET  /api/health`
+- `POST /api/reconciliation/run` body `{ "skipLlm"?: boolean }`
+- `GET  /api/reconciliation/results`
+- `GET  /api/metrics/summary`
+- `GET  /api/metrics/exceptions`
+- `POST /api/qna/ask` → 501 (stretch)
+
+## Session status (as of 2026-09-01 — supersedes all earlier snapshots)
+Branch: `main` (confirm with `git branch`).
+
+**Phase 2 COMPLETE** (synthetic data + seed gate).  
+**Phase 3 COMPLETE** (Tier-1/2 recon + metrics + Express API + thin UI).
 
 DONE:
-- Schema + Docker Postgres + seed gate (75 events, 6 orphans)
-- Tier-1 exactMatcher + router + runReconciliation
-- Tier-2 Groq primary / Gemini failover + JSON repair path
-- Metrics: match rate, tier split, discrepancy breakdown, exception list
-- Candidate dedupe in router
-- Express API on `:3001` (`npm run dev` in server/)
-  - `POST /api/reconciliation/run`
-  - `GET /api/reconciliation/results`
-  - `GET /api/metrics/summary`
-  - `GET /api/metrics/exceptions`
-- Thin Vite client (`npm run dev` in client/, proxies `/api`)
-- Verified full batch: ~32 MATCHED / 40 PARTIAL / 21 EXCEPTION (~77% match+partial)
+- Prisma schema + init migration on Docker Postgres
+- Seed: 75 events, taxonomy quotas, ≥6 true orphans, ground-truth mapping
+- Tier-1 exact triangle match (links + amount + timestamp); duplicateEntry
+  primaries can Tier-1 match (expected — dup row remains for Tier-2)
+- Tier-2 Groq → Gemini failover + JSON `failed_generation` repair
+- Router candidate dedupe
+- Metrics modules + exception list (verbatim reasoning)
+- Express API + Vite demo UI (RunTrigger, MetricsSummary, ExceptionList)
+- Verified full batch (example): 32 MATCHED / 40 PARTIAL / 21 EXCEPTION
+  (~77% match+partial); Tier-1 26 / Tier-2 67
 
 NOT DONE / stretch:
-- Settlement Q&A layer (`/api/qna/ask` returns 501)
-- Ground-truth accuracy panel in UI (`validateAgainstGroundTruth` exists server-side)
-- Merge branch → main when user is ready
-- Optional: tighter orphan labeling vs seed taxonomy
-- Optional: wrap seed wipe+inserts in `$transaction()`
+- Settlement Q&A (`qna.routes` 501; `QnAPanel` placeholder)
+- Ground-truth accuracy panel in UI (server helper exists)
+- Optional: reduce LLM over-labeling of `trueOrphan`
+- Optional: seed wipe+inserts in `prisma.$transaction()`
+- Optional: commit hygiene / docs alignment for D4 ops override in
+  decision-doc (only if user explicitly asks to edit decision-doc)
 
 Open items (do not silently decide — see design-doc):
 - FK constraints after data generation validated (D7)
 - Exact Tier 1→2 confidence threshold (tune on real data)
-- Where ground-truth ORIGIN mapping is stored long-term
+- Long-term storage location for ground-truth ORIGIN mapping
 
-## Core domain rules (do not violate when generating schema, data, or logic)
-1. All monetary amounts are Prisma `Decimal`, never `Float` or `Int`.
-   Currency math must never use native JS floating point.
-2. All timestamps use full `DateTime`, not date-only — settlement lag
-   needs time precision.
-3. Cross-table linking fields are plain nullable strings with NO FK
-   constraints yet (D7). Null = valid orphan → exception list, not a bug.
-4. Every reconciliation decision must be structured:
-   `{ status: MATCHED | PARTIAL_MATCH | EXCEPTION, confidence: number,
+## Core domain rules
+1. Money = Prisma `Decimal` / decimal.js strings — never JS floats.
+2. Timestamps = full `DateTime` (settlement lag needs time precision).
+3. Cross-table link fields = nullable strings, **no FKs yet** (D7).
+   Null orphan → exception list, not a schema bug.
+4. Every decision:
+   `{ status: MATCHED | PARTIAL_MATCH | EXCEPTION, confidence: 0–1,
      discrepancyType: string | null, reasoning: string }`.
-   Never bare boolean or unstructured prose only.
-5. Exact matches (exact ID + amount + timestamp) → plain TypeScript
-   (Tier 1). Ambiguous cases → Groq Tier 2 (Gemini failover). Ask
-   before treating a case as deterministic enough to skip LLM.
-6. Never inflate match rate by force-fitting. Honest exceptions with
-   reasoning are correct outputs.
-7. `SettlementRecord.netAmount` is NOT auto-computed in schema — synthetic
-   data may intentionally inject net ≠ gross − fee − tax.
-8. Discrepancy taxonomy (must be explicit in data, not incidental):
-   exactMatch, settlementLag, feeDeduction, partialCapture, splitPayment,
-   manyToOne, duplicateEntry, currencyRounding, trueOrphan (target 4–6+).
-9. Ground truth is for internal validation only — never expose it to the
-   reconciliation agent or Tier-2 prompts.
+5. Exact ID+amount+timestamp → Tier-1 TypeScript only. Ambiguous →
+   Groq Tier-2 (Gemini failover). Ask before skipping the LLM.
+6. Never inflate match rate. Honest EXCEPTIONs with reasoning are correct.
+7. `SettlementRecord.netAmount` is NOT schema-derived — may be wrong on
+   purpose in synthetic data.
+8. Taxonomy must be explicit: exactMatch, settlementLag, feeDeduction,
+   partialCapture, splitPayment, manyToOne, duplicateEntry,
+   currencyRounding, trueOrphan (target 4–6+ orphans).
+9. Ground truth is internal validation only — never in Tier-2 prompts.
 
 ## Working style
-- Before touching Prisma schema, LLM prompt logic, or reconciliation
-  matching logic, state current data-flow understanding in 1–3 sentences,
-  then proceed. Do not silently assume schema shape.
-- When asked to add a new discrepancy type to synthetic data, ask which
-  table(s) it originates in before generating rows.
-- Never invent Razorpay-specific field names from memory — if uncertain
-  (e.g. utr, fee, tax, settlement_id), say so explicitly.
-- Keep secrets in `server/.env`, never hardcode, never log API keys in
-  full (mask all but last 4 chars if debugging).
-- Do not add UI polish unless explicitly requested. Priority:
-  correct schema > honest synthetic data > working reconciliation >
-  accurate metrics/exception reporting > UI (UI last).
-- Fill stub files only when the user asks for that file/feature — do not
-  bulk-implement the whole pipeline unprompted.
-- Do not modify `decision-doc.md` / `design-doc.md` unless explicitly asked.
-  Locked decisions stay locked without a real new constraint.
+- Before schema / prompt / matching changes: state data-flow in 1–3
+  sentences, then proceed.
+- New discrepancy type → ask which table(s) first.
+- Never invent Razorpay field names from memory; say when uncertain.
+- Secrets only in `server/.env`; never log keys in full (mask to last 4).
+- Priority: schema > honest synthetic data > recon logic > metrics >
+  UI. No UI polish unless asked.
+- Do not bulk-implement unprompted; do not edit `decision-doc.md` /
+  `design-doc.md` unless explicitly asked.
+- Locked decisions stay locked without a real new constraint (quota /
+  model_not_found / 503 counts as a real constraint for LLM ops).
