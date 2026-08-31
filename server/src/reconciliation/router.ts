@@ -164,10 +164,18 @@ async function resolveViaGemini(
   });
 
   const maxAttempts = 4;
+  const timeoutMs = 30_000; // 30-second timeout per call
   let lastError: unknown;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      const result = await model.generateContent(prompt);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
+      let result;
+      try {
+        result = await model.generateContent(prompt);
+      } finally {
+        clearTimeout(timeout);
+      }
       const text = result.response.text();
       const decision = parseReconciliationResponse(text, candidate);
       return {
@@ -196,24 +204,32 @@ async function resolveViaGroq(
   prompt: string,
 ): Promise<ReconciliationDecision> {
   const maxAttempts = 4;
+  const timeoutMs = 30_000; // 30-second timeout per call
   let lastError: unknown;
   let jsonRepairAttempted = false;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      const completion = await getGroqClient().chat.completions.create({
-        model: getGroqModelName(),
-        temperature: 0.1,
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a finance-operations reconciliation agent. Reply with a single JSON object only.",
-          },
-          { role: "user", content: prompt },
-        ],
-      });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
+      let completion;
+      try {
+        completion = await getGroqClient().chat.completions.create({
+          model: getGroqModelName(),
+          temperature: 0.1,
+          response_format: { type: "json_object" },
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a finance-operations reconciliation agent. Reply with a single JSON object only.",
+            },
+            { role: "user", content: prompt },
+          ],
+        });
+      } finally {
+        clearTimeout(timeout);
+      }
 
       const text = completion.choices[0]?.message?.content ?? "";
       const decision = parseReconciliationResponse(text, candidate);
@@ -421,12 +437,15 @@ export async function routeReconciliation(
     const t0 = Date.now();
     try {
       const decision = await resolveViaLlm(candidate);
+      const duration = Date.now() - t0;
       completed += 1;
       console.log(
-        `Tier-2 ${completed}/${total} ${label} → ${decision.status} (${Date.now() - t0}ms)`,
+        `Tier-2 ${completed}/${total} ${label} → ${decision.status} (${duration}ms)`,
       );
-      return decision;
+      // Issue 13: Store LLM call duration
+      return { ...decision, llmDurationMs: duration };
     } catch (err) {
+      const duration = Date.now() - t0;
       completed += 1;
       const message = err instanceof Error ? err.message : String(err);
       console.error(`Tier-2 ${completed}/${total} ${label} FAILED: ${message}`);
@@ -439,6 +458,7 @@ export async function routeReconciliation(
         ledgerEntryId: candidate.ledger?.ledgerEntryId ?? null,
         settlementId: candidate.settlement?.settlementId ?? null,
         resolvedByLLM: true,
+        llmDurationMs: duration, // Issue 13: Store duration even on failure
       };
     }
   }

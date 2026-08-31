@@ -21,6 +21,8 @@ export interface ReconciliationDecision {
   ledgerEntryId: string | null;
   settlementId: string | null;
   resolvedByLLM: boolean;
+  /** Issue 13: Tier-2 LLM call duration in milliseconds (null if Tier 1). */
+  llmDurationMs?: number | null;
 }
 
 /** Candidate triple (or partial) passed to Tier 2 when Tier 1 cannot resolve. */
@@ -93,6 +95,7 @@ export interface ExceptionListItem {
   confidence: number;
   reasoning: string;
   resolvedByLLM: boolean;
+  llmDurationMs: number | null;
   createdAt: string;
 }
 

@@ -127,23 +127,36 @@ API surface:
 Branch: `main` (confirm with `git branch`).
 
 **Phase 2 COMPLETE** (synthetic data + seed gate).  
-**Phase 3 COMPLETE** (Tier-1/2 recon + metrics + Express API + thin UI).
+**Phase 3 COMPLETE** (Tier-1/2 recon + metrics + Express API + thin UI).  
+**Phase 4.2 COMPLETE** (reliability hardening + connection pool bounds + LLM metrics).
 
 DONE:
 - Prisma schema + init migration on Docker Postgres
 - Seed: 75 events, taxonomy quotas, ≥6 true orphans, ground-truth mapping
 - Tier-1 exact triangle match (links + amount + timestamp); duplicateEntry
   primaries can Tier-1 match (expected — dup row remains for Tier-2)
-- Tier-2 Groq → Gemini failover + JSON `failed_generation` repair
-- Router candidate dedupe
-- Metrics modules + exception list (verbatim reasoning)
+- Tier-2 Groq → Gemini failover + JSON `failed_generation` repair + 30s timeout
+- Router candidate dedupe + LLM duration capture
+- Metrics modules + exception list (verbatim reasoning) + llmDurationMs stored
 - Express API + Vite demo UI (RunTrigger, MetricsSummary, ExceptionList)
+- **Phase 4.2 reliability hardening** (see RELIABILITY-AUDIT.md):
+  - Prisma disconnect on error + process.exit()
+  - Startup validation (DB connectivity check)
+  - 30s timeout on all LLM calls
+  - CORS restricted to localhost (not wildcard)
+  - HTTP request timeout (5 min) + graceful SIGTERM shutdown
+  - Connection pool bounds with 503 backpressure
+  - Decimal parsing fails loudly (no silent false)
+  - Full LLM response logging on parse failure
+  - Client API response structure validation
+  - `.env.example` created for secrets management
 - Verified full batch (example): 32 MATCHED / 40 PARTIAL / 21 EXCEPTION
   (~77% match+partial); Tier-1 26 / Tier-2 67
 
 NOT DONE / stretch:
 - Settlement Q&A (`qna.routes` 501; `QnAPanel` placeholder)
 - Ground-truth accuracy panel in UI (server helper exists)
+- Circuit breaker for cascading LLM failures
 - Optional: reduce LLM over-labeling of `trueOrphan`
 - Optional: seed wipe+inserts in `prisma.$transaction()`
 - Optional: commit hygiene / docs alignment for D4 ops override in
@@ -161,7 +174,7 @@ Open items (do not silently decide — see design-doc):
    Null orphan → exception list, not a schema bug.
 4. Every decision:
    `{ status: MATCHED | PARTIAL_MATCH | EXCEPTION, confidence: 0–1,
-     discrepancyType: string | null, reasoning: string }`.
+     discrepancyType: string | null, reasoning: string, llmDurationMs?: number | null }`.
 5. Exact ID+amount+timestamp → Tier-1 TypeScript only. Ambiguous →
    Groq Tier-2 (Gemini failover). Ask before skipping the LLM.
 6. Never inflate match rate. Honest EXCEPTIONs with reasoning are correct.
@@ -171,6 +184,30 @@ Open items (do not silently decide — see design-doc):
    partialCapture, splitPayment, manyToOne, duplicateEntry,
    currencyRounding, trueOrphan (target 4–6+ orphans).
 9. Ground truth is internal validation only — never in Tier-2 prompts.
+
+## Reliability & production rules (Phase 4.2)
+1. **Errors are never silent**:
+   - Decimal parsing: throws on invalid input (not false)
+   - LLM JSON: logs full response on parse failure
+   - API startup: validates DB connectivity before listening
+   - Main() functions: disconnect Prisma and exit(1) on error
+2. **Timeouts are mandatory**:
+   - All LLM calls: 30-second timeout (Groq + Gemini)
+   - HTTP requests: 5-minute timeout (server-level)
+   - Failing LLM: tries 4x with exponential backoff, then EXCEPTION
+3. **Connection management**:
+   - Always `await prisma.$disconnect()` in catch blocks
+   - Connection pool tracked; returns 503 if exhausted (default 10)
+   - Configure via `DB_CONNECTION_LIMIT` env
+4. **Configuration**:
+   - Secrets: `server/.env` only (never commit real keys)
+   - Copy `server/.env.example` to `.env` before running
+   - CORS: defaults to `http://localhost:5173`; override with `CORS_ORIGIN`
+   - PORT: defaults to 3001; override with `PORT` env
+5. **Metrics**:
+   - LLM call duration stored in `llmDurationMs` field
+   - Can identify slow candidates via metrics API
+   - Never skip logging duration even on failure
 
 ## Working style
 - Before schema / prompt / matching changes: state data-flow in 1–3
@@ -184,3 +221,7 @@ Open items (do not silently decide — see design-doc):
   `design-doc.md` unless explicitly asked.
 - Locked decisions stay locked without a real new constraint (quota /
   model_not_found / 503 counts as a real constraint for LLM ops).
+- **For reliability/error handling**: see RELIABILITY-AUDIT.md + PHASE-4-2-FIXES.md
+  (must not regress on error handling, timeouts, or connection cleanup).
+- **For architecture**: see ARCHITECTURE.md (data flow, 3-way recon, verified results).
+- **For current roadmap**: see ROADMAP.md (Phase 4 demo hardening in progress).

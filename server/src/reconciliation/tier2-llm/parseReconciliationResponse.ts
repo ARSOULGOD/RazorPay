@@ -120,11 +120,15 @@ export function parseReconciliationResponse(
 ): ReconciliationDecision {
   const obj = tryParseJsonObject(rawText);
   if (!obj) {
+    // Log full response for debugging; show summary in reasoning.
+    console.error(
+      `Tier-2 JSON parse FAILED (ledger=${candidate.ledger?.ledgerEntryId ?? "null"}). Full response:\n${rawText}`,
+    );
     return {
       status: "EXCEPTION",
       confidence: 0,
       discrepancyType: null,
-      reasoning: `Tier-2 parse failure: model did not return valid JSON. Raw (truncated): ${rawText.slice(0, 400)}`,
+      reasoning: `Tier-2 parse failure: model did not return valid JSON. See server logs for full response.`,
       bankTxnId: candidate.bank?.bankTxnId ?? null,
       ledgerEntryId: candidate.ledger?.ledgerEntryId ?? null,
       settlementId: candidate.settlement?.settlementId ?? null,

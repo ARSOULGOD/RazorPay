@@ -80,5 +80,7 @@ model ReconciliationResult {
   reasoning       String               @db.Text
   /// false = deterministic Tier 1; true = Claude Tier 2.
   resolvedByLLM   Boolean
+  /// Issue 13: Track Tier-2 LLM call latency (ms). Null if Tier 1.
+  llmDurationMs   Int?
   createdAt       DateTime             @default(now())
 }

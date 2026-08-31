@@ -94,6 +94,7 @@ async function persistDecisions(decisions: ReconciliationDecision[]): Promise<vo
       discrepancyType: d.discrepancyType,
       reasoning: d.reasoning,
       resolvedByLLM: d.resolvedByLLM,
+      llmDurationMs: d.llmDurationMs ?? null, // Issue 13: Store LLM latency
     })),
   });
 }
@@ -147,7 +148,9 @@ async function main() {
 
 if (require.main === module) {
   main().catch(async (err) => {
-    console.error(err);
+    console.error("runReconciliation FAILED:", err);
+    await prisma.$disconnect();
+    process.exit(1);
     await prisma.$disconnect();
     process.exit(1);
   });

@@ -7,9 +7,21 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
     ...init,
   });
-  const body = await res.json();
-  if (!res.ok || body?.ok === false) {
-    throw new Error(body?.error ?? `HTTP ${res.status}`);
+  let body: unknown;
+  try {
+    body = await res.json();
+  } catch (err) {
+    throw new Error(`Failed to parse JSON response from ${path}: ${err}`);
+  }
+  
+  // Validate response structure before casting.
+  if (typeof body !== "object" || body === null) {
+    throw new Error(`API ${path} returned non-object: ${typeof body}`);
+  }
+  
+  if (!res.ok || (body as Record<string, unknown>).ok === false) {
+    const error = (body as Record<string, unknown>).error ?? `HTTP ${res.status}`;
+    throw new Error(String(error));
   }
   return body as T;
 }

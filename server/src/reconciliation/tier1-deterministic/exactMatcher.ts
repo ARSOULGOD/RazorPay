@@ -10,11 +10,8 @@ import type {
 } from "../../types/reconciliation.types";
 
 function moneyEq(a: string, b: string): boolean {
-  try {
-    return new Decimal(a).eq(new Decimal(b));
-  } catch {
-    return false;
-  }
+  // Throws if a or b is not a valid decimal string; fail loudly on corrupted data.
+  return new Decimal(a).eq(new Decimal(b));
 }
 
 function timeEq(aIso: string, bIso: string): boolean {
