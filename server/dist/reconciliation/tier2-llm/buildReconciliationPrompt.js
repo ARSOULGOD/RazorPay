@@ -1,3 +1,0 @@
-"use strict";
-// Builds the structured Claude prompt for ambiguous multi-source reconciliation cases.
-//# sourceMappingURL=buildReconciliationPrompt.js.map
