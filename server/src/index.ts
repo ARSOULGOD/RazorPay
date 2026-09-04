@@ -6,6 +6,7 @@ import { prisma } from "./db/prisma";
 import { reconciliationRouter } from "./routes/reconciliation.routes";
 import { metricsRouter } from "./routes/metrics.routes";
 import { qnaRouter } from "./routes/qna.routes";
+import { attachReconciliationSocket } from "./ws/reconciliationSocket";
 
 const app = express();
 const port = Number.parseInt(process.env.PORT ?? "3001", 10);
@@ -79,6 +80,8 @@ const server = app.listen(port, async () => {
     server.close(() => process.exit(1));
   }
 });
+
+attachReconciliationSocket(server);
 
 // Set request timeout (5 minutes max) to prevent indefinite hangs.
 server.setTimeout(5 * 60 * 1000);

@@ -1,5 +1,8 @@
 // Routes each candidate to Tier-1 deterministic matching or Tier-2 LLM reasoning.
 
+import { resolveLlmConcurrency } from "./llmConcurrency";
+import { mapWithConcurrency } from "./mapWithConcurrency";
+import { emitLog, emitProgress, type RunEventSink } from "./runEvents";
 import { findExactMatchesWithCoverage } from "./tier1-deterministic/exactMatcher";
 import { buildReconciliationPrompt } from "./tier2-llm/buildReconciliationPrompt";
 import {
@@ -385,7 +388,7 @@ export async function routeReconciliation(
   banks: BankTxnView[],
   ledgers: LedgerView[],
   settlements: SettlementView[],
-  options?: { skipLlm?: boolean },
+  options?: { skipLlm?: boolean; onEvent?: RunEventSink },
 ): Promise<ReconciliationDecision[]> {
   const { decisions: tier1, usedBankIds, usedLedgerIds, usedSettlementIds } =
     findExactMatchesWithCoverage(banks, ledgers, settlements);
@@ -401,11 +404,14 @@ export async function routeReconciliation(
 
   const tier2: ReconciliationDecision[] = [];
   const total = candidates.length;
-  console.log(
+  emitLog(
+    options?.onEvent,
     `routeReconciliation: Tier-1 resolved ${tier1.length}; Tier-2 candidates ${total}`,
   );
+  emitProgress(options?.onEvent, "tier1", 1, 1);
 
   if (options?.skipLlm) {
+    emitLog(options?.onEvent, `Tier-2 skipped (skipLlm=true); ${total} left unresolved`);
     for (const candidate of candidates) {
       tier2.push({
         status: "EXCEPTION",
@@ -422,54 +428,54 @@ export async function routeReconciliation(
     return [...tier1, ...tier2];
   }
 
-  const concurrency = Math.max(
-    1,
-    Number.parseInt(process.env.GEMINI_CONCURRENCY ?? "1", 10) || 1,
-  );
-  let completed = 0;
-
-  async function runOne(candidate: ReconciliationCandidate, index: number) {
-    const label =
-      candidate.ledger?.ledgerEntryId ??
-      candidate.bank?.bankTxnId ??
-      candidate.settlement?.settlementId ??
-      `idx_${index}`;
-    const t0 = Date.now();
-    try {
-      const decision = await resolveViaLlm(candidate);
-      const duration = Date.now() - t0;
-      completed += 1;
-      console.log(
-        `Tier-2 ${completed}/${total} ${label} → ${decision.status} (${duration}ms)`,
+  const concurrency = resolveLlmConcurrency();
+  
+  const tier2Wrapped = await mapWithConcurrency(
+    candidates,
+    concurrency,
+    async (candidate, index) => {
+      const label =
+        candidate.ledger?.ledgerEntryId ??
+        candidate.bank?.bankTxnId ??
+        candidate.settlement?.settlementId ??
+        `idx_${index}`;
+      const t0 = Date.now();
+      try {
+        const decision = await resolveViaLlm(candidate);
+        const duration = Date.now() - t0;
+        return {
+          label,
+          decision: { ...decision, llmDurationMs: duration },
+        };
+      } catch (err) {
+        const duration = Date.now() - t0;
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          label,
+          decision: {
+            status: "EXCEPTION" as const,
+            confidence: 0,
+            discrepancyType: null,
+            reasoning: `Tier-2 API failure: ${message}`,
+            bankTxnId: candidate.bank?.bankTxnId ?? null,
+            ledgerEntryId: candidate.ledger?.ledgerEntryId ?? null,
+            settlementId: candidate.settlement?.settlementId ?? null,
+            resolvedByLLM: true,
+            llmDurationMs: duration,
+          },
+        };
+      }
+    },
+    ({ completed, total: t, result }) => {
+      const duration = result.decision.llmDurationMs ?? 0;
+      emitLog(
+        options?.onEvent,
+        `Tier-2 ${completed}/${t} ${result.label} → ${result.decision.status} (${duration}ms)`,
       );
-      // Issue 13: Store LLM call duration
-      return { ...decision, llmDurationMs: duration };
-    } catch (err) {
-      const duration = Date.now() - t0;
-      completed += 1;
-      const message = err instanceof Error ? err.message : String(err);
-      console.error(`Tier-2 ${completed}/${total} ${label} FAILED: ${message}`);
-      return {
-        status: "EXCEPTION" as const,
-        confidence: 0,
-        discrepancyType: null,
-        reasoning: `Tier-2 API failure: ${message}`,
-        bankTxnId: candidate.bank?.bankTxnId ?? null,
-        ledgerEntryId: candidate.ledger?.ledgerEntryId ?? null,
-        settlementId: candidate.settlement?.settlementId ?? null,
-        resolvedByLLM: true,
-        llmDurationMs: duration, // Issue 13: Store duration even on failure
-      };
-    }
-  }
-
-  for (let i = 0; i < candidates.length; i += concurrency) {
-    const batch = candidates.slice(i, i + concurrency);
-    const batchResults = await Promise.all(
-      batch.map((c, j) => runOne(c, i + j)),
-    );
-    tier2.push(...batchResults);
-  }
-
-  return [...tier1, ...tier2];
+      emitProgress(options?.onEvent, "tier2", completed, t);
+    },
+  );
+  
+  const finalTier2 = tier2Wrapped.map((w) => w.decision);
+  return [...tier1, ...finalTier2];
 }

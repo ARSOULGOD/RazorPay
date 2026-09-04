@@ -60,6 +60,12 @@ export function tryExactMatch(
 
   if (!timesOk) return null;
 
+  const threshold = parseFloat(process.env.TIER1_CONFIDENCE_THRESHOLD || "1.0");
+  const computedConfidence = 1.0; // exact match
+  if (computedConfidence < threshold) {
+    return null; // Defer to Tier 2 if below threshold
+  }
+
   return {
     status: "MATCHED",
     confidence: 1,

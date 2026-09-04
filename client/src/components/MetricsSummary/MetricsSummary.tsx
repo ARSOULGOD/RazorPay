@@ -11,16 +11,15 @@ export function MetricsSummary({
   data: MetricsSummaryResponse | null;
 }) {
   return (
-    <section style={{ marginBottom: "1.5rem" }}>
-      <h2 style={{ margin: "0 0 0.75rem" }}>Metrics</h2>
+    <div style={{ marginBottom: "1.5rem" }}>
       {!data ? (
         <p>Load or run a reconciliation to see metrics.</p>
       ) : (
         <div
           style={{
             display: "grid",
-            gap: "1rem",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: "12px",
+            gridTemplateColumns: "1.2fr 1fr 1fr",
           }}
         >
           <MatchRateCard data={data.matchRate} />
@@ -28,6 +27,6 @@ export function MetricsSummary({
           <DiscrepancyBreakdownChart rows={data.discrepancyBreakdown} />
         </div>
       )}
-    </section>
+    </div>
   );
 }

@@ -1,0 +1,163 @@
+<style>
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.pill{cursor:pointer;user-select:none;transition:transform .1s}
+.pill:active{transform:scale(.97)}
+.pill.active{background:var(--bg-accent);border-color:var(--border-accent);color:var(--text-accent)}
+td,th{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+</style>
+<h2 class="sr-only">Redesigned reconciliation dashboard: a 28 percent match rate highlighted in red, a tier and discrepancy breakdown, an AI settlement query panel, and a filterable table of 67 exceptions grouped into unmatched, duplicate, split, and orphan.</h2>
+
+<div style="padding:1rem 0 1.25rem;">
+  <h1 style="margin:0 0 4px;">AI finance controller</h1>
+  <p style="margin:0;font-size:14px;color:var(--text-secondary);">3-way reconciliation — bank, ledger, settlement</p>
+</div>
+
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem;">
+  <button style="background:var(--bg-accent);border-color:var(--border-accent);color:var(--text-accent);display:inline-flex;align-items:center;gap:6px;"><i class="ti ti-player-play" style="font-size:16px" aria-hidden="true"></i>Run full reconciliation</button>
+  <button style="display:inline-flex;align-items:center;gap:6px;"><i class="ti ti-bolt" style="font-size:16px" aria-hidden="true"></i>Run tier-1 only</button>
+</div>
+
+<div style="background:var(--surface-1);border-radius:var(--radius);padding:10px 16px;display:flex;align-items:center;gap:8px;margin-bottom:1.5rem;font-family:var(--font-mono);font-size:13px;color:var(--text-muted);">
+  <i class="ti ti-terminal-2" style="font-size:16px" aria-hidden="true"></i>Waiting for a run…
+</div>
+
+<div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:12px;margin-bottom:1.5rem;">
+  <div style="background:var(--bg-danger);border-radius:var(--radius);padding:1rem;">
+    <p style="margin:0 0 6px;font-size:13px;color:var(--text-danger);">Match rate</p>
+    <p style="margin:0 0 4px;font-size:28px;font-weight:500;color:var(--text-danger);">28%</p>
+    <p style="margin:0;font-size:12px;color:var(--text-danger);">26 of 93 matched · 67 exceptions</p>
+  </div>
+  <div style="background:var(--surface-1);border-radius:var(--radius);padding:1rem;">
+    <p style="margin:0 0 8px;font-size:13px;color:var(--text-secondary);">Tier split</p>
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-size:13px;">Tier-1</span><span style="font-size:13px;font-weight:500;">93</span></div>
+    <div style="display:flex;justify-content:space-between;"><span style="font-size:13px;">Tier-2 (LLM)</span><span style="font-size:13px;font-weight:500;">0</span></div>
+  </div>
+  <div style="background:var(--surface-1);border-radius:var(--radius);padding:1rem;">
+    <p style="margin:0 0 8px;font-size:13px;color:var(--text-secondary);">By type</p>
+    <div style="margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;"><span>Unclassified</span><span style="font-weight:500;">67</span></div>
+      <div style="height:5px;background:var(--bg-warning);border-radius:3px;overflow:hidden;"><div style="height:100%;width:100%;background:var(--border-warning);"></div></div>
+    </div>
+    <div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;"><span>Exact match</span><span style="font-weight:500;">26</span></div>
+      <div style="height:5px;background:var(--bg-success);border-radius:3px;overflow:hidden;"><div style="height:100%;width:39%;background:var(--border-success);"></div></div>
+    </div>
+  </div>
+</div>
+
+<div style="background:var(--surface-2);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:1.5rem;">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+    <i class="ti ti-sparkles" style="font-size:18px;color:var(--text-accent);" aria-hidden="true"></i>
+    <p style="margin:0;font-weight:500;font-size:15px;">Ask AI about a settlement</p>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <select id="settlement-select" style="flex:1;min-width:170px;">
+      <option>set_evt_0054_s53 (exception)</option>
+      <option>set_evt_0002_s1</option>
+      <option>set_evt_0075_s74</option>
+    </select>
+    <input id="ask-input" type="text" placeholder="Why was there a fee discrepancy?" style="flex:2;min-width:200px;" />
+    <button id="ask-btn">Ask</button>
+  </div>
+  <p id="ask-err" style="display:none;margin:6px 0 0;font-size:12px;color:var(--text-danger);">Enter a question first.</p>
+</div>
+
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+  <h2 style="margin:0;">Exceptions</h2>
+  <span style="background:var(--surface-1);color:var(--text-secondary);font-size:12px;font-weight:500;padding:2px 8px;border-radius:999px;">67</span>
+</div>
+
+<div style="display:flex;gap:8px;align-items:flex-start;background:var(--bg-warning);border-radius:var(--radius);padding:10px 14px;margin-bottom:1rem;">
+  <i class="ti ti-info-circle" style="font-size:16px;color:var(--text-warning);flex-shrink:0;margin-top:1px;" aria-hidden="true"></i>
+  <p style="margin:0;font-size:13px;color:var(--text-warning);">Tier-2 (LLM) matching was disabled for this run, so all 67 exceptions were left unresolved instead of auto-classified.</p>
+</div>
+
+<div id="filters" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem;">
+  <button class="pill active" data-filter="all" style="font-size:12px;padding:5px 12px;border-radius:999px;">All 67</button>
+  <button class="pill" data-filter="unmatched" style="font-size:12px;padding:5px 12px;border-radius:999px;">Unmatched 41</button>
+  <button class="pill" data-filter="duplicate" style="font-size:12px;padding:5px 12px;border-radius:999px;">Duplicate 8</button>
+  <button class="pill" data-filter="split" style="font-size:12px;padding:5px 12px;border-radius:999px;">Split 12</button>
+  <button class="pill" data-filter="orphan" style="font-size:12px;padding:5px 12px;border-radius:999px;">Orphan 6</button>
+</div>
+
+<div style="overflow-x:auto;">
+<table style="width:100%;table-layout:fixed;border-collapse:collapse;font-size:13px;">
+  <thead>
+    <tr style="border-bottom:0.5px solid var(--border-strong);">
+      <th style="text-align:left;padding:8px 6px;font-weight:500;color:var(--text-secondary);width:32%;">Ledger ID</th>
+      <th style="text-align:left;padding:8px 6px;font-weight:500;color:var(--text-secondary);width:16%;">Type</th>
+      <th style="text-align:left;padding:8px 6px;font-weight:500;color:var(--text-secondary);width:26%;">Bank ref</th>
+      <th style="text-align:left;padding:8px 6px;font-weight:500;color:var(--text-secondary);width:26%;">Set ref</th>
+    </tr>
+  </thead>
+  <tbody id="exc-rows">
+    <tr data-type="unmatched" style="border-bottom:0.5px solid var(--border);">
+      <td style="padding:8px 6px;font-family:var(--font-mono);" title="led_evt_0002_s1">led_evt_0002_s1</td>
+      <td style="padding:8px 6px;"><span style="background:var(--surface-1);border:0.5px solid var(--border-strong);color:var(--text-secondary);font-size:12px;font-weight:500;padding:2px 8px;border-radius:999px;">Unmatched</span></td>
+      <td style="padding:8px 6px;font-family:var(--font-mono);color:var(--text-secondary);" title="bank_evt_0002_s1">bank_evt_0002_s1</td>
+      <td style="padding:8px 6px;font-family:var(--font-mono);color:var(--text-secondary);" title="set_evt_0002_s1">set_evt_0002_s1</td>
+    </tr>
+    <tr data-type="duplicate" style="border-bottom:0.5px solid var(--border);">
+      <td style="padding:8px 6px;font-family:var(--font-mono);" title="led_evt_0003_s2_dup">led_evt_0003_s2_dup</td>
+      <td style="padding:8px 6px;"><span style="background:var(--bg-accent);color:var(--text-accent);font-size:12px;font-weight:500;padding:2px 8px;border-radius:999px;">Duplicate</span></td>
+      <td style="padding:8px 6px;font-family:var(--font-mono);color:var(--text-muted);">—</td>
+      <td style="padding:8px 6px;font-family:var(--font-mono);color:var(--text-muted);">—</td>
+    </tr>
+    <tr data-type="split" style="border-bottom:0.5px solid var(--border);">
+      <td style="padding:8px 6px;font-family:var(--font-mono);" title="led_evt_0048_s47_a">led_evt_0048_s47_a</td>
+      <td style="padding:8px 6px;"><span style="background:var(--bg-warning);color:var(--text-warning);font-size:12px;font-weight:500;padding:2px 8px;border-radius:999px;">Split</span></td>
+      <td style="padding:8px 6px;font-family:var(--font-mono);color:var(--text-secondary);" title="bank_evt_0048_s47">bank_evt_0048_s47</td>
+      <td style="padding:8px 6px;font-family:var(--font-mono);color:var(--text-secondary);" title="set_evt_0048_s47">set_evt_0048_s47</td>
+    </tr>
+    <tr data-type="split" style="border-bottom:0.5px solid var(--border);">
+      <td style="padding:8px 6px;font-family:var(--font-mono);" title="led_evt_0048_s47_b">led_evt_0048_s47_b</td>
+      <td style="padding:8px 6px;"><span style="background:var(--bg-warning);color:var(--text-warning);font-size:12px;font-weight:500;padding:2px 8px;border-radius:999px;">Split</span></td>
+      <td style="padding:8px 6px;font-family:var(--font-mono);color:var(--text-secondary);" title="bank_evt_0048_s47">bank_evt_0048_s47</td>
+      <td style="padding:8px 6px;font-family:var(--font-mono);color:var(--text-secondary);" title="set_evt_0048_s47">set_evt_0048_s47</td>
+    </tr>
+    <tr data-type="orphan" style="border-bottom:0.5px solid var(--border);">
+      <td style="padding:8px 6px;font-family:var(--font-mono);color:var(--text-muted);">—</td>
+      <td style="padding:8px 6px;"><span style="background:var(--bg-danger);color:var(--text-danger);font-size:12px;font-weight:500;padding:2px 8px;border-radius:999px;">Orphan</span></td>
+      <td style="padding:8px 6px;font-family:var(--font-mono);color:var(--text-secondary);" title="bank_evt_0052_s51">bank_evt_0052_s51</td>
+      <td style="padding:8px 6px;font-family:var(--font-mono);color:var(--text-muted);">—</td>
+    </tr>
+    <tr data-type="orphan" style="border-bottom:0.5px solid var(--border);">
+      <td style="padding:8px 6px;font-family:var(--font-mono);color:var(--text-muted);">—</td>
+      <td style="padding:8px 6px;"><span style="background:var(--bg-danger);color:var(--text-danger);font-size:12px;font-weight:500;padding:2px 8px;border-radius:999px;">Orphan</span></td>
+      <td style="padding:8px 6px;font-family:var(--font-mono);color:var(--text-muted);">—</td>
+      <td style="padding:8px 6px;font-family:var(--font-mono);color:var(--text-secondary);" title="set_evt_0075_s74">set_evt_0075_s74</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p id="row-count" style="margin:8px 0 0;font-size:12px;color:var(--text-muted);">Showing 6 of 67 — sample rows for this mockup</p>
+
+<script>
+document.getElementById('ask-btn').addEventListener('click',function(){
+  var q=document.getElementById('ask-input').value.trim();
+  var err=document.getElementById('ask-err');
+  if(!q){err.style.display='block';return;}
+  err.style.display='none';
+  var s=document.getElementById('settlement-select').value;
+  sendPrompt('For '+s+': '+q);
+});
+document.getElementById('ask-input').addEventListener('input',function(){
+  document.getElementById('ask-err').style.display='none';
+});
+var counts={all:67,unmatched:41,duplicate:8,split:12,orphan:6};
+document.querySelectorAll('#filters .pill').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('#filters .pill').forEach(function(b){b.classList.remove('active');});
+    btn.classList.add('active');
+    var f=btn.getAttribute('data-filter');
+    var rows=document.querySelectorAll('#exc-rows tr');
+    var shown=0;
+    rows.forEach(function(r){
+      var show=(f==='all')||(r.getAttribute('data-type')===f);
+      r.style.display=show?'':'none';
+      if(show)shown++;
+    });
+    document.getElementById('row-count').textContent='Showing '+shown+' of '+counts[f]+' — sample rows for this mockup';
+  });
+});
+</script>

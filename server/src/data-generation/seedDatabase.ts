@@ -140,20 +140,24 @@ async function main() {
     abort(`Prisma connect failed: ${String(err)} — Is aifc_postgres Up (healthy)?`);
   }
 
-  await prisma.reconciliationResult.deleteMany();
-  await prisma.bankTransaction.deleteMany();
-  await prisma.ledgerEntry.deleteMany();
-  await prisma.settlementRecord.deleteMany();
-
   const bankRows = results.flatMap((r) => r.bankRows);
   const ledgerRows = results.flatMap((r) => r.ledgerRows);
   const settlementRows = results.flatMap((r) => r.settlementRows);
 
-  const bankCreate = await prisma.bankTransaction.createMany({ data: bankRows });
-  const ledgerCreate = await prisma.ledgerEntry.createMany({ data: ledgerRows });
-  const settlementCreate = await prisma.settlementRecord.createMany({
-    data: settlementRows,
-  });
+  const [
+    _, _a, _b, _c,
+    bankCreate,
+    ledgerCreate,
+    settlementCreate
+  ] = await prisma.$transaction([
+    prisma.reconciliationResult.deleteMany(),
+    prisma.bankTransaction.deleteMany(),
+    prisma.ledgerEntry.deleteMany(),
+    prisma.settlementRecord.deleteMany(),
+    prisma.bankTransaction.createMany({ data: bankRows }),
+    prisma.ledgerEntry.createMany({ data: ledgerRows }),
+    prisma.settlementRecord.createMany({ data: settlementRows }),
+  ]);
 
   if (bankCreate.count !== bankRows.length) {
     abort(`bank insert count ${bankCreate.count} !== flattened ${bankRows.length}`);

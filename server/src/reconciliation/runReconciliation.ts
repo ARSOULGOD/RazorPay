@@ -2,6 +2,7 @@
 
 import "dotenv/config";
 import { prisma } from "../db/prisma";
+import { emitLog, emitProgress, type RunEventSink } from "./runEvents";
 import { routeReconciliation } from "./router";
 import type {
   BankTxnView,
@@ -109,6 +110,7 @@ export interface ReconciliationRunSummary {
 
 export async function runReconciliation(options?: {
   skipLlm?: boolean;
+  onEvent?: RunEventSink;
 }): Promise<ReconciliationRunSummary> {
   const [banks, ledgers, settlements] = await Promise.all([
     prisma.bankTransaction.findMany(),
@@ -120,22 +122,27 @@ export async function runReconciliation(options?: {
     banks.map(toBankView),
     ledgers.map(toLedgerView),
     settlements.map(toSettlementView),
-    { skipLlm: options?.skipLlm },
+    { skipLlm: options?.skipLlm, onEvent: options?.onEvent },
   );
 
+  emitProgress(options?.onEvent, "persist", 1, 1);
+  emitLog(options?.onEvent, "Persisting reconciliation decisions…");
   await persistDecisions(decisions);
 
   const stored = await prisma.reconciliationResult.findMany({
     orderBy: { createdAt: "asc" },
   });
 
-  return {
+  const summary = {
     decisionsWritten: stored.length,
     matchRate: computeMatchRate(stored),
     tierSplit: computeTierSplit(stored),
     discrepancyBreakdown: computeDiscrepancyBreakdown(stored),
     exceptions: buildExceptionList(stored).length,
   };
+
+  options?.onEvent?.({ type: "run.done", summary });
+  return summary;
 }
 
 async function main() {

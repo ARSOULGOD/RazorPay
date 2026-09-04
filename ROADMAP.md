@@ -63,8 +63,8 @@ Priority for Buildathon submission polish:
    - [ ] Optional: expose ground-truth accuracy number in metrics API (internal only, labeled)
 
 3. **Honest reporting**
-   - [ ] Tighten Tier-2 orphan labeling vs seed taxonomy (reduce false `trueOrphan` tags)
-   - [ ] Ensure exception list always shows verbatim reasoning in UI (already wired — verify in demo run)
+   - [x] Tighten Tier-2 orphan labeling vs seed taxonomy (reduce false `trueOrphan` tags)
+   - [x] Ensure exception list always shows verbatim reasoning in UI (already wired — verify in demo run)
 
 4. **Submission checklist (track bar)**
    - [ ] Process entire 50+ batch in demo (not cherry-picked)
